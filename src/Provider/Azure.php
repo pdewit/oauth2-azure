@@ -108,35 +108,35 @@ class Azure extends AbstractProvider
     {
         $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $this->wrapResponse($response, $accessToken);
     }
 
     public function post($ref, $body, &$accessToken, $headers = [])
     {
         $response = $this->request('post', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $this->wrapResponse($response, $accessToken);
     }
 
     public function put($ref, $body, &$accessToken, $headers = [])
     {
         $response = $this->request('put', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $this->wrapResponse($response, $accessToken);
     }
 
     public function delete($ref, &$accessToken, $headers = [])
     {
         $response = $this->request('delete', $ref, $accessToken, ['headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $this->wrapResponse($response, $accessToken);
     }
 
     public function patch($ref, $body, &$accessToken, $headers = [])
     {
         $response = $this->request('patch', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $this->wrapResponse($response, $accessToken);
     }
 
     public function request($method, $ref, &$accessToken, $options = [])
@@ -348,12 +348,18 @@ class Azure extends AbstractProvider
         return new AzureResourceOwner($response);
     }
 
-    private function wrapResponse($response)
+    private function wrapResponse($response, $accessToken)
     {
         if (empty($response)) {
             return;
         } elseif (isset($response['value'])) {
-            return $response['value'];
+            $array = $response['value'];
+            if(isset($response['@odata.nextLink'])) {
+                $nextLink = substr($response['@odata.nextLink'], strrpos($response['@odata.nextLink'], '/'));
+                return array_merge($array, $this->get($nextLink, $accessToken));
+            }
+
+            return $array;
         }
 
         return $response;
